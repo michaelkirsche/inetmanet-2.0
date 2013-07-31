@@ -54,7 +54,8 @@ class INET_API MACAddress
     /** The special multicast PAUSE MAC address, 01:80:C2:00:00:01 */
     static const MACAddress MULTICAST_PAUSE_ADDRESS;
 
-  static const MACAddress BROADCAST_ADDRESS64;
+    /** The 64-Bit (EUI64) broadcast MAC address, ff:ff:ff:ff:ff:ff:ff:ff" */
+    static const MACAddress BROADCAST_ADDRESS64;
 
     /**
      * Default constructor initializes address bytes to zero.
@@ -95,7 +96,7 @@ class INET_API MACAddress
     MACAddress& operator=(const MACAddress& other) { address = other.address; macAddress64 = other.macAddress64; return *this; }
 
     /**
-     * Returns the address size in bytes, that is, 6.
+     * Returns the address size in bytes, that is, 6 (48-Bit MAC) or 8 (EUI-64-Bit).
      */
     unsigned int getAddressSize() const { return (macAddress64?MAC_ADDRESS_SIZE64:MAC_ADDRESS_SIZE); }
 

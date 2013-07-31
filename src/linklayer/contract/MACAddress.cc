@@ -221,7 +221,7 @@ MACAddress MACAddress::generateAutoAddress()
 {
     ++autoAddressCtr;
 
-    uint64 intAddr = 0x0AAA00000000ULL + (autoAddressCtr & 0xffffffffUL);
+    uint64 intAddr = 0x0AAA00000000ULL + (autoAddressCtr & 0xffffffffULL);
     MACAddress addr(intAddr);
     return addr;
 }
@@ -279,7 +279,3 @@ MACAddress MACAddress::getEui48()
     addr.convert48();
     return addr;
 }
-
-
-
-
