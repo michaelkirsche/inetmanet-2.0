@@ -56,13 +56,39 @@ void csma802154::initialize(int stage)
         const char *addressString = par("address");
         if (!strcmp(addressString, "auto"))
         {
+            /**
+             * The old way to autogenerate a 48-Bit MAC address
             // assign automatic address
             macaddress = MACAddress::generateAutoAddress();
             // change module parameter from "auto" to concrete address
             par("address").setStringValue(macaddress.str().c_str());
+             */
+
+            /**
+             * "New" way to generate 64-Bit EUI MAC addresses
+             * -> taken from Ieee802154Mac.cc -> initialize()
+             */
+            ++addrCount;
+            macaddress.setFlagEui64(true);
+
+            unsigned char addrbytes[MAC_ADDRESS_SIZE64];
+            addrbytes[0] = 0x0A;
+            addrbytes[1] = 0xAA;
+            addrbytes[2] = 0x00;
+            addrbytes[3] = 0xff;
+            addrbytes[4] = 0xfe;
+            addrbytes[5] = 0x00;
+            addrbytes[6] = (addrCount>>8)&0xff;
+            addrbytes[7] = (addrCount>>0)&0xff;
+            macaddress.setAddressBytes(addrbytes);
+            // change module parameter from "auto" to concrete address
+            par("address").setStringValue(macaddress.str().c_str());
         }
         else
+        {
+            // set address based on parameter setting from omnetpp.ini
             macaddress.setAddress(addressString);
+        }
 
         registerInterface();
 
