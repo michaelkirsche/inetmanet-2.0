@@ -26,7 +26,8 @@ import inet.networklayer.icmpv6.ICMPv6;
 import inet.networklayer.IxMIPv6Support;
 import inet.networklayer.IIPv6Tunneling;
 import inet.base.IHook;
-
+// including the 6LoWPAN wrapper
+import inet.networklayer.ipv6._6lowpan._6lowpan;
 
 //
 // Represents an IPv6 network layer (L3).
@@ -58,7 +59,7 @@ module NetworkLayer6
         ipv6: IPv6 {
             parameters:
                 protocolMapping = "6:0,17:1,46:2,89:3,132:4"; // TODO register 132 as sctp in ipv6 code
-                @display("p=84,129");
+                @display("p=135,150");
             gates:
                 transportIn[5];
                 transportOut[5];
@@ -67,7 +68,7 @@ module NetworkLayer6
         }
         icmpv6: ICMPv6 {
             parameters:
-                @display("p=189,79");
+                @display("p=197,79");
         }
         ipv6ErrorHandling: IPv6ErrorHandling {
             parameters:
@@ -84,6 +85,14 @@ module NetworkLayer6
         mipv6support: <default(xMIPv6Support?"xMIPv6Support":"xMIPv6Support_None")> like IxMIPv6Support {
             parameters:
                 @display("p=44,79");
+        }
+        sixlowpan: _6lowpan {
+            @display("p=135,251;is=s");
+            gates:
+                fromIPv6[sizeof(ifIn)];
+                toIPv6[sizeof(ifIn)];
+                fromMac[sizeof(ifIn)];
+                toMac[sizeof(ifIn)];
         }
     connections allowunconnected:  // FIXME remove 'nocheck'!
         // IPv6 to transport Layer
@@ -131,12 +140,21 @@ module NetworkLayer6
         ipv6.xMIPv6Out --> mipv6support.fromIPv6;
         ipv6.xMIPv6In <-- mipv6support.toIPv6;
 
-        // IPv6 to L2
+//        // IPv6 to L2 (original)
+//        for i=0..sizeof(ifIn)-1 {
+//            ifIn[i] --> { @display("m=s"); } --> ipv6.queueIn[i];
+//        }
+//        for i=0..sizeof(ifOut)-1 {
+//            ipv6.queueOut[i] --> { @display("m=s"); } --> ifOut[i];
+//        }
+		// IPv6 to L2 (with 6LoWPAN integration)
         for i=0..sizeof(ifIn)-1 {
-            ifIn[i] --> { @display("m=s"); } --> ipv6.queueIn[i];
+            ifIn[i] --> sixlowpan.fromMac[i];
+            sixlowpan.toIPv6[i] --> { @display("m=s"); } --> ipv6.queueIn[i];
         }
         for i=0..sizeof(ifOut)-1 {
-            ipv6.queueOut[i] --> { @display("m=s"); } --> ifOut[i];
+            ipv6.queueOut[i] --> sixlowpan.fromIPv6[i];
+            sixlowpan.toMac[i] --> { @display("m=s"); } --> ifOut[i];
         }
 }
 
