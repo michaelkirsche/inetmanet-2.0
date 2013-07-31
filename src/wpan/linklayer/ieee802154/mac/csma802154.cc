@@ -75,8 +75,8 @@ void csma802154::initialize(int stage)
             addrbytes[0] = 0x0A;
             addrbytes[1] = 0xAA;
             addrbytes[2] = 0x00;
-            addrbytes[3] = 0xff;
-            addrbytes[4] = 0xfe;
+            addrbytes[3] = 0xfe;
+            addrbytes[4] = 0xff;
             addrbytes[5] = 0x00;
             addrbytes[6] = (addrCount>>8)&0xff;
             addrbytes[7] = (addrCount>>0)&0xff;
