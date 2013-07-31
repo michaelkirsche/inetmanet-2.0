@@ -282,7 +282,7 @@ class INET_API Ieee802154Mac: public cSimpleModule, public INotifiable
     double bitrate;
 
     /**
-    * @name Initializtion functions
+    * @name Initialization functions
     */
     //@{
     virtual void    initialize    (int);

@@ -593,7 +593,7 @@ void Ieee802154Phy::handleLowerMsgEnd(AirFrame * airframe)
         // the sender of this pkt turned off the transmitter during transmission
         else if (airframe->getEncapsulatedPacket()->getKind() == BITERROR_FORCE_TRX_OFF)
         {
-            EV << "[PHY]: reception of " << airframe->getName() << " frame failed because the sender turned off its transmitter during the tranmission, drop it \n";
+            EV << "[PHY]: reception of " << airframe->getName() << " frame failed because the sender turned off its transmitter during the transmission, drop it \n";
             isCorrupt = true;
         }
         else
