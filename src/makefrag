@@ -46,3 +46,10 @@ ifneq (,$(findstring -DWITH_VOIPSTREAM,$(COPTS)))
   endif
 endif
 
+#
+# # # Integrate Contiki 6LoWPAN into INETMANET # # #
+# 
+# When you want to integrate Contiki's 6LoWPAN implementation,
+# enable it here by un-commenting the following line and re-compile INETMANET
+#
+include ./networklayer/ipv6/_6lowpan/Makefile.6lowpan
