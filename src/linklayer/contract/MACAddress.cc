@@ -235,11 +235,15 @@ void MACAddress::convert64()
     unsigned char addrbytes[MAC_ADDRESS_SIZE];
     getAddressBytes(addrbytes);
     macAddress64 = true;
+    // conversion from EUI-48 to EUI-64 MAC addresses by inserting "FF-FE" in the middle 16 bits
+    // and according to RFC4291 section 2.5.1 -> invert the seventh bit from the left
+    // addrbytes64[0] = addrbytes[0] | 0x02;
+    // --> but this is not done at the moment (really?), according to Cisco [https://supportforums.cisco.com/docs/DOC-24485]
     addrbytes64[0] = addrbytes[0];
     addrbytes64[1] = addrbytes[1];
     addrbytes64[2] = addrbytes[2];
-    addrbytes64[3] = 0xfe;
-    addrbytes64[4] = 0xff;
+    addrbytes64[3] = 0xff;
+    addrbytes64[4] = 0xfe;
     addrbytes64[5] = addrbytes[3];
     addrbytes64[6] = addrbytes[4];
     addrbytes64[7] = addrbytes[5];
@@ -260,9 +264,14 @@ void MACAddress::convert48()
     unsigned char addrbytes64[MAC_ADDRESS_SIZE64];
     unsigned char addrbytes[MAC_ADDRESS_SIZE];
     getAddressBytes(addrbytes64);
-    if (addrbytes64[3] != 0xfe ||  addrbytes64[4] != 0xff)
+    // conversion from EUI-64 to EUI-48 MAC addresses only for addresses that were converted to 64-Bit
+    // check if the middle 16 bits are "FF-FE"
+    if (addrbytes64[3] != 0xff ||  addrbytes64[4] != 0xfe)
         throw cRuntimeError("MACAddress: conversion EUI-64 to EUI-48 impossible");
     macAddress64 = false;
+    // and according to RFC4291 section 2.5.1 -> invert the seventh bit from the left
+    // addrbytes[0] = addrbytes64[0] ^ 0x02;
+    // -> but this is not yet performed in convert64() or in practice (really?)
     addrbytes[0] = addrbytes64[0];
     addrbytes[1] = addrbytes64[1];
     addrbytes[2] = addrbytes64[2];

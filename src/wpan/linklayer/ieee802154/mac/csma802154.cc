@@ -72,11 +72,11 @@ void csma802154::initialize(int stage)
             macaddress.setFlagEui64(true);
 
             unsigned char addrbytes[MAC_ADDRESS_SIZE64];
-            addrbytes[0] = 0x0A;
-            addrbytes[1] = 0xAA;
+            addrbytes[0] = 0x00;
+            addrbytes[1] = 0x00;
             addrbytes[2] = 0x00;
-            addrbytes[3] = 0xfe;
-            addrbytes[4] = 0xff;
+            addrbytes[3] = 0xff;
+            addrbytes[4] = 0xfe;
             addrbytes[5] = 0x00;
             addrbytes[6] = (addrCount>>8)&0xff;
             addrbytes[7] = (addrCount>>0)&0xff;
