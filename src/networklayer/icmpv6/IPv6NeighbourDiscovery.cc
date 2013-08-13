@@ -2065,6 +2065,7 @@ void IPv6NeighbourDiscovery::sendSolicitedNA(IPv6NeighbourSolicitation *ns,
         IPv6ControlInfo *nsCtrlInfo, InterfaceEntry *ie)
 {
     IPv6NeighbourAdvertisement *na = new IPv6NeighbourAdvertisement("NApacket");
+    na->setType(ICMPv6_NEIGHBOUR_AD);
     //RFC 2461: Section 7.2.4
     /*A node sends a Neighbor Advertisement in response to a valid Neighbor
     Solicitation targeting one of the node's assigned addresses.  The
@@ -2157,6 +2158,7 @@ void IPv6NeighbourDiscovery::sendUnsolicitedNA(InterfaceEntry *ie)
     // least RetransTimer seconds.
 #else /* WITH_xMIPv6 */
     IPv6NeighbourAdvertisement *na = new IPv6NeighbourAdvertisement("NApacket");
+    na->setType(ICMPv6_NEIGHBOUR_AD);
     IPv6Address myIPv6Addr = ie->ipv6Data()->getPreferredAddress();
 #endif /* WITH_xMIPv6 */
 
