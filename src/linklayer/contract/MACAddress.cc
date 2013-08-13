@@ -48,7 +48,7 @@ void MACAddress::setAddressByte(unsigned int k, unsigned char addrbyte)
 {
     if (macAddress64)
     {
-        if (k>=MAC_ADDRESS_SIZE64) throw cRuntimeError("Array of size 6 indexed with %d", k);
+        if (k>=MAC_ADDRESS_SIZE64) throw cRuntimeError("Array of size 8 indexed with %d", k);
         int offset = (MAC_ADDRESS_SIZE64-k-1)*8;
         address = (address&(~(((uint64)0xff)<<offset)))|(((uint64)addrbyte)<<offset);
     }
@@ -211,7 +211,13 @@ InterfaceToken MACAddress::formInterfaceIdentifier() const
     }
     else
     {
-        uint32 high = (address>>16)|0xff;
+        //uint32 high = (address>>16)|0xff;
+        /**
+         * INET fix #471:
+         * MACAddress::formInterfaceIdentifier(): 7th bit of the
+         * Interface Identifier should be complemented
+         */
+        uint32 high = ((address>>16)|0xff)^0x02000000;
         uint32 low = (0xfe<<24)|(address&0xffffff);
         return InterfaceToken(low, high, 64);
     }

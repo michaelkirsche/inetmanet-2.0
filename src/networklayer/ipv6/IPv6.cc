@@ -661,6 +661,9 @@ void IPv6::fragmentAndSend(IPv6Datagram *datagram, InterfaceEntry *ie, const MAC
 
     // ensure source address is filled
     if (fromHL && datagram->getSrcAddress().isUnspecified() &&
+    // FIXME problem -> pingMsg are stored by ND and passed from there with fromHL=false
+    // -> ping Msg don't get any SrcAddress set if you don't set it manually via omnetpp.ini
+    //if (datagram->getSrcAddress().isUnspecified() &&
             !datagram->getDestAddress().isSolicitedNodeMulticastAddress())
     {
         // source address can be unspecified during DAD
