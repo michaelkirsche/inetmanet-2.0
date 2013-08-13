@@ -316,12 +316,12 @@ void csma802154::handleUpperMsg(cMessage *msg)
             //no record of current parent -> add next sequence number to map
             SeqNrParent[dest] = 1;
             macPkt->setBdsn(0);
-            EV << "Adding a new parent to the map of Sequence numbers:" << dest << endl;
+            EV << "Adding a new parent to the map of Sequence numbers: " << dest << endl;
         }
         else
         {
             macPkt->setBdsn(SeqNrParent[dest]);
-            EV << "Packet send with sequence number = " << SeqNrParent[dest] << endl;
+            EV << "Packet send with sequence number = " << (int) SeqNrParent[dest] << endl;  // quick fix to correct the output of sequence numbers
             SeqNrParent[dest]++;
         }
     }
@@ -1024,8 +1024,8 @@ void csma802154::handleLowerMsg(cMessage *msg)
                 else
                 {
                     ExpectedNr = SeqNrChild[src];
-                    EV << "Expected Sequence number is " << ExpectedNr <<
-                    " and number of packet is " << SeqNr << endl;
+                    EV << "Expected Sequence number is " << (int) ExpectedNr <<   // Quick fix for wrong display of sequence number
+                    " and number of packet is " << (int) SeqNr << endl;           // Quick fix for wrong display of sequence number
                     int8_t sub     = ((int8_t)SeqNr) - ((int8_t) ExpectedNr);
                     //if (SeqNr < ExpectedNr)
                     if (sub < 0)
