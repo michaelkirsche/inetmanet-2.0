@@ -552,25 +552,94 @@ void IPv6::localDeliver(IPv6Datagram *datagram)
 
 void IPv6::handleReceivedICMP(ICMPv6Message *msg)
 {
-    int type = msg->getType();
-    if (type < 128)
+    switch (msg->getType())
     {
-        // ICMP errors are delivered to the appropriate higher layer protocols
-        EV << "ICMPv6 packet: passing it to higher layer\n";
-        IPv6Datagram *bogusPacket = check_and_cast<IPv6Datagram *>(msg->getEncapsulatedPacket());
-        int protocol = bogusPacket->getTransportProtocol();
-        int gateindex = mapping.getOutputGateForProtocol(protocol);
-        send(msg, "transportOut", gateindex);
+        case ICMPv6_UNSPECIFIED:
+        case ICMPv6_DESTINATION_UNREACHABLE:
+        case ICMPv6_PACKET_TOO_BIG:
+        case ICMPv6_TIME_EXCEEDED:
+        case ICMPv6_PARAMETER_PROBLEM: {
+            // ICMPv6 errors are delivered to the appropriate higher layer protocol
+            IPv6Datagram *bogusPacket = check_and_cast<IPv6Datagram *>(msg->getEncapsulatedPacket());
+            int protocol = bogusPacket->getTransportProtocol();
+
+            switch (protocol) {
+                case IP_PROT_IPv6_ICMP:
+                {
+                    EV << "ICMPv6 error packet: passing it to ICMPv6 module -> further passing to IPv6ErrorHandling \n";
+                    send(msg, "icmpOut");
+                    break;
+                }
+                default:
+                {
+                    EV << "other error packet: passing it to higher layer\n";
+                    int gateindex = mapping.getOutputGateForProtocol(protocol);
+                    send(msg, "transportOut", gateindex);
+                    break;
+                }
+            }
+
+            break;
+        }
+        default: {
+            // all others are delivered to ICMPv6: ICMPv6_ECHO_REQUEST, ICMPv6_ECHO_REPLY,
+            // ICMPv6_MLD_QUERY, ICMPv6_MLD_REPORT, ICMPv6_MLD_DONE, ICMPv6_ROUTER_SOL,
+            // ICMPv6_ROUTER_AD, ICMPv6_NEIGHBOUR_SOL, ICMPv6_NEIGHBOUR_AD, ICMPv6_REDIRECT,
+            // ICMPv6_MLDv2_REPORT, ICMPv6_EXPERIMENTAL_MOBILITY
+            EV << "ICMPv6 packet: passing it to ICMPv6 module\n";
+
+            // FIXME why is ICMPv6 not connected to transportOut like its done in IPv4?
+            // the following code from IPv4 would work if ICMPv6 is connected through transportOut
+            // and the protocolMapping in the NetworkLayer6.ned would have been updated accordingly
+            //int gateindex = mapping.getOutputGateForProtocol(IP_PROT_IPv6_ICMP);
+            //send(msg, "transportOut", gateindex);
+
+            send(msg, "icmpOut");
+            break;
+        }
     }
-    else
-    {
-        // all others are delivered to ICMP:
-        // ICMPv6_ECHO_REQUEST, ICMPv6_ECHO_REPLY, ICMPv6_MLD_QUERY, ICMPv6_MLD_REPORT,
-        // ICMPv6_MLD_DONE, ICMPv6_ROUTER_SOL, ICMPv6_ROUTER_AD, ICMPv6_NEIGHBOUR_SOL,
-        // ICMPv6_NEIGHBOUR_AD, ICMPv6_MLDv2_REPORT
-        EV << "ICMPv6 packet: passing it to ICMPv6 module\n";
-        send(msg, "icmpOut");
-    }
+
+//
+//    int type = msg->getType();
+//    if (type < 128)
+//    {
+//        // ErrorHandling receives the messages from ICMP, which receives them from IP.
+//        // However IP forwards the incoming ICMP errors to the transport protocol,
+//        // that initiated the IP datagram causing the error.
+//        // Therefore they usually does not reach the ErrorHandling module.
+//
+//        // reported in INET BUG report 392
+//        // http://dev.omnetpp.org/bugs/view.php?id=392
+//
+//        // FIX add another condition and find out if the ICMP error should go to a higher transport protocol
+//        // or directly to the ICMP error module and therefore the IPv6 Error Handling Module
+//        // the protocol mapping (IP_PROT_IPv6_ICMP = 58;) is defined in /networklayer/contract/IPProtocolId.msg
+//
+//        switch (protocol) {
+//            case IP_PROT_IPv6_ICMP:
+//            {
+//                EV << "ICMPv6 error packet: passing it to ICMPv6 module -> further passing to IPv6ErrorHandling \n";
+//                send(msg, "icmpOut");
+//                break;
+//            }
+//            default:
+//            {
+//                EV << "ICMPv6 error packet: passing it to higher layer\n";
+//                int gateindex = mapping.getOutputGateForProtocol(protocol);
+//                send(msg, "transportOut", gateindex);
+//                break;
+//            }
+//        }
+//    }
+//    else
+//    {
+//        // all others are delivered to ICMP:
+//        // ICMPv6_ECHO_REQUEST, ICMPv6_ECHO_REPLY, ICMPv6_MLD_QUERY, ICMPv6_MLD_REPORT,
+//        // ICMPv6_MLD_DONE, ICMPv6_ROUTER_SOL, ICMPv6_ROUTER_AD, ICMPv6_NEIGHBOUR_SOL,
+//        // ICMPv6_NEIGHBOUR_AD, ICMPv6_MLDv2_REPORT
+//        EV << "ICMPv6 packet: passing it to ICMPv6 module\n";
+//        send(msg, "icmpOut");
+//    }
 }
 
 cPacket *IPv6::decapsulate(IPv6Datagram *datagram)
@@ -774,7 +843,7 @@ bool IPv6::determineOutputInterface(const IPv6Address& destAddress, IPv6Address&
             {
                 EV << "unroutable, sending ICMPv6_DESTINATION_UNREACHABLE\n";
                 numUnroutable++;
-                icmp->sendErrorMessage(datagram, ICMPv6_DESTINATION_UNREACHABLE, 0); // FIXME check ICMP 'code'
+                icmp->sendErrorMessage(datagram, ICMPv6_DESTINATION_UNREACHABLE, NO_ROUTE_TO_DEST); // DONE check ICMP 'code'
             }
             else // host
             {
