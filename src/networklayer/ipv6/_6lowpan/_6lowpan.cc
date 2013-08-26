@@ -392,7 +392,7 @@ void _6lowpan::handleMessageFromHigher(cMessage *msg)
 	// Check, if we are connected to 802.15.4?
 	if(configuration[gateIndex]->connectedToLowpan)
 	{
-		// Are we handling an IPv6 paket?
+		// Are we handling an IPv6 packet?
 		if(dynamic_cast<IPv6Datagram*>(msg) != null)
 		{
 #if DEBUG
@@ -433,7 +433,7 @@ void _6lowpan::handleMessageFromHigher(cMessage *msg)
 	}
 	else
 	{
-		// When we are not connected to 802.15.4 but we register ipaddress anyway for compression
+		// When we are not connected to 802.15.4 but we register IP address anyway for compression
 		registerContext(gateIndex);
 #endif /* USE_6LOWPAN */
 		send(msg, "toMac", gateIndex);
@@ -921,51 +921,17 @@ list<cPacket*> _6lowpan::processIPv6Packet(IPv6Datagram* ipPacket, int gateIndex
 		else if(dynamic_cast<ICMPv6DestUnreachableMsg*>(icmpPacket) != null)
 		{
 #if DEBUG
-        printf("\tprocessing ICMPv6_DESTINATION_UNREACHABLE packet\t");
+        printf("\tprocessing ICMPv6_DESTINATION_UNREACHABLE packet -> with code = %d \n",((ICMPv6DestUnreachableMsg*)icmpPacket)->getCode());
 #endif /* DEBUG */
 			UIP_ICMP_BUF->type = ICMP6_DST_UNREACH;
-			switch(((ICMPv6DestUnreachableMsg*)icmpPacket)->getCode())
-			{
-				case NO_ROUTE_TO_DEST:
-				{
-#if DEBUG
-        printf("-> with code = 0 (NO_ROUTE_TO_DESTINATION)\n");
-#endif /* DEBUG */
-					UIP_ICMP_BUF->icode = ICMP6_DST_UNREACH_NOROUTE;
-					break;
-				}
-				case COMM_WITH_DEST_PROHIBITED:
-				{
-#if DEBUG
-        printf("-> with code = 1 (COMM_WITH_DEST_PROHIBITED)\n");
-#endif /* DEBUG */
-				    UIP_ICMP_BUF->icode = ICMP6_DST_UNREACH_ADMIN;
-					break;
-				}
-				case ADDRESS_UNREACHABLE:
-				{
-#if DEBUG
-        printf("-> with code = 3 (ADDRESS_UNREACHABLE)\n");
-#endif /* DEBUG */
-					UIP_ICMP_BUF->icode = ICMP6_DST_UNREACH_ADDR;
-					break;
-				}
-				case PORT_UNREACHABLE:
-				{
-#if DEBUG
-        printf("-> with code = 4 (PORT_UNREACHABLE)\n");
-#endif /* DEBUG */
-					UIP_ICMP_BUF->icode = ICMP6_DST_UNREACH_NOPORT;
-					break;
-				}
-				default:
-				{
-#if DEBUG
-        printf("-> without code \t \t ERROR CASE !!!\n");
-#endif /* DEBUG */
-					break;
-				}
-			}
+            UIP_ICMP_BUF->icode = ((ICMPv6DestUnreachableMsg*)icmpPacket)->getCode();
+
+			if (   (UIP_ICMP_BUF->icode != NO_ROUTE_TO_DEST)
+			    && (UIP_ICMP_BUF->icode != COMM_WITH_DEST_PROHIBITED)
+			    //&& (UIP_ICMP_BUF->icode != DEST_BEYOND_SRC_SCOPE)     // not used at the moment
+			    && (UIP_ICMP_BUF->icode != ADDRESS_UNREACHABLE)
+			    && (UIP_ICMP_BUF->icode != PORT_UNREACHABLE))
+			    error("6LoWPAN wrapper -> processIPv6Packet -> ICMPv6DestUnreachableMsg -> icode unspecified value of %d",(UIP_ICMP_BUF ->icode));
 		}
 		else if(dynamic_cast<ICMPv6PacketTooBigMsg*>(icmpPacket) != null)
 		{
@@ -978,81 +944,32 @@ list<cPacket*> _6lowpan::processIPv6Packet(IPv6Datagram* ipPacket, int gateIndex
 		else if(dynamic_cast<ICMPv6TimeExceededMsg*>(icmpPacket) != null)
 		{
 #if DEBUG
-        printf("\tprocessing ICMPv6_TIME_EXCEEDED packet\t");
+        printf("\tprocessing ICMPv6_TIME_EXCEEDED packet -> with code = %d \n",((ICMPv6TimeExceededMsg*)icmpPacket)->getCode());
 #endif /* DEBUG */
 			UIP_ICMP_BUF->type = ICMP6_TIME_EXCEEDED;
-			switch(((ICMPv6TimeExceededMsg*)icmpPacket)->getCode())
-			{
-				case ND_HOP_LIMIT_EXCEEDED:
-				{
-#if DEBUG
-        printf("-> with code = 0 (ND_HOP_LIMIT_EXCEEDED)\n");
-#endif /* DEBUG */
-					UIP_ICMP_BUF->icode = ICMP6_TIME_EXCEED_TRANSIT;
-					break;
-				}
-				case ND_FRAGMENT_REASSEMBLY_TIME:
-				{
-#if DEBUG
-        printf("-> with code = 1 (ND_FRAGMENT_REASSEMBLY_TIME)\n");
-#endif /* DEBUG */
-					UIP_ICMP_BUF->icode = ICMP6_TIME_EXCEED_REASSEMBLY;
-					break;
-				}
-				default:
-				{
-#if DEBUG
-        printf("-> without code \t \t ERROR CASE !!!!\n");
-#endif /* DEBUG */
-					break;
-				}
-			}
+			UIP_ICMP_BUF->icode = ((ICMPv6TimeExceededMsg*)icmpPacket)->getCode();
+
+            if (   (UIP_ICMP_BUF->icode != ND_HOP_LIMIT_EXCEEDED)
+                && (UIP_ICMP_BUF->icode != ND_FRAGMENT_REASSEMBLY_TIME))
+                error("6LoWPAN wrapper -> processIPv6Packet -> ICMPv6TimeExceededMsg -> icode unspecified value of %d",(UIP_ICMP_BUF ->icode));
 		}
 		else if(dynamic_cast<ICMPv6ParamProblemMsg*>(icmpPacket) != null)
 		{
 #if DEBUG
-        printf("\tprocessing ICMPv6_PARAMETER_PROBLEM packet\t");
+        printf("\tprocessing ICMPv6_PARAMETER_PROBLEM packet -> with code = %d \n",((ICMPv6ParamProblemMsg*)icmpPacket)->getCode());
 #endif /* DEBUG */
 		    UIP_ICMP_BUF->type = ICMP6_PARAM_PROB;
-			switch(((ICMPv6ParamProblemMsg*)icmpPacket)->getCode())
-			{
-				case ERROREOUS_HDR_FIELD:
-				{
-#if DEBUG
-        printf("-> with code = 0 (ERROREOUS_HDR_FIELD)\n");
-#endif /* DEBUG */
-					UIP_ICMP_BUF->icode = ICMP6_PARAMPROB_HEADER;
-					break;
-				}
-				case UNRECOGNIZED_NEXT_HDR_TYPE:
-				{
-#if DEBUG
-        printf("-> with code = 1 (UNRECOGNIZED_NEXT_HDR_TYPE)\n");
-#endif /* DEBUG */
-					UIP_ICMP_BUF->icode = ICMP6_PARAMPROB_NEXTHEADER;
-					break;
-				}
-				case UNRECOGNIZED_IPV6_OPTION:
-				{
-#if DEBUG
-        printf("-> with code = 2 (UNRECOGNIZED_IPV6_OPTION)\n");
-#endif /* DEBUG */
-					UIP_ICMP_BUF->icode = ICMP6_PARAMPROB_OPTION;
-					break;
-				}
-				default:
-				{
-#if DEBUG
-        printf("-> without code \t \t ERROR CASE\n");
-#endif /* DEBUG */
-				    break;
-				}
-			}
+			UIP_ICMP_BUF->icode = ((ICMPv6ParamProblemMsg*)icmpPacket)->getCode();
+
+            if (   (UIP_ICMP_BUF->icode != ERROREOUS_HDR_FIELD)
+                && (UIP_ICMP_BUF->icode != UNRECOGNIZED_NEXT_HDR_TYPE)
+                && (UIP_ICMP_BUF->icode != UNRECOGNIZED_IPV6_OPTION))
+                error("6LoWPAN wrapper -> processIPv6Packet -> ICMPv6ParamProblemMsg -> icode unspecified value of %d",(UIP_ICMP_BUF ->icode));
 		}
 		else if(dynamic_cast<ICMPv6EchoRequestMsg*>(icmpPacket) != null)
 		{
 #if DEBUG
-        printf("\tprocessing ICMPv6_ECHO_REQUEST packet...\n");
+        printf("\tprocessing ICMPv6_ECHO_REQUEST packet -> with code = %d \n",((ICMPv6EchoRequestMsg*)icmpPacket)->getCode());
 #endif /* DEBUG */
 		    UIP_ICMP_BUF->type = ICMP6_ECHO_REQUEST;
 			UIP_ICMP_BUF->icode = ((ICMPv6EchoRequestMsg*)icmpPacket)->getCode();
@@ -1060,7 +977,7 @@ list<cPacket*> _6lowpan::processIPv6Packet(IPv6Datagram* ipPacket, int gateIndex
 		else if(dynamic_cast<ICMPv6EchoReplyMsg*>(icmpPacket) != null)
 		{
 #if DEBUG
-        printf("\tprocessing ICMPv6_ECHO_REPLY packet...\n");
+        printf("\tprocessing ICMPv6_ECHO_REPLY packet -> with code = %d \n",((ICMPv6EchoReplyMsg*)icmpPacket)->getCode());
 #endif /* DEBUG */
 			UIP_ICMP_BUF->type = ICMP6_ECHO_REPLY;
 			UIP_ICMP_BUF->icode = ((ICMPv6EchoReplyMsg*)icmpPacket)->getCode();
@@ -1090,7 +1007,7 @@ list<cPacket*> _6lowpan::processIPv6Packet(IPv6Datagram* ipPacket, int gateIndex
 		UIP_UDP_BUF->srcport = UIP_HTONS(udpPacket->getSourcePort());
 		UIP_UDP_BUF->destport = UIP_HTONS(udpPacket->getDestinationPort());
 		UIP_UDP_BUF->udplen = 0;// TODO add payload length
-		//because we use IPv6 and this is standard setting
+		// because we use IPv6 and this is standard setting
 		UIP_UDP_BUF->udpchksum = 0;
 		UIP_UDP_BUF->udpchksum = ~(uip_udpchksum());
 	}
@@ -1144,15 +1061,15 @@ list<cPacket*> _6lowpan::processIPv6Packet(IPv6Datagram* ipPacket, int gateIndex
 				bytecount++;
 				switch(opt.getKind())
 				{
-					case TCPOPTION_END_OF_OPTION_LIST: //RFC 793
+					case TCPOPTION_END_OF_OPTION_LIST: // RFC 793
 					{
 						break;
 					}
-					case TCPOPTION_NO_OPERATION: //RFC 793
+					case TCPOPTION_NO_OPERATION: // RFC 793
 					{
 						break;
 					}
-					case TCPOPTION_MAXIMUM_SEGMENT_SIZE: //RFC 793
+					case TCPOPTION_MAXIMUM_SEGMENT_SIZE: // RFC 793
 					{
 						*opt_ptr++ = (u8_t)opt.getLength();
 						*opt_ptr++ = (u8_t)(opt.getValues(0) >> 8);
@@ -1160,20 +1077,20 @@ list<cPacket*> _6lowpan::processIPv6Packet(IPv6Datagram* ipPacket, int gateIndex
 						bytecount += 3;
 						break;
 					}
-					case TCPOPTION_WINDOW_SCALE: //RFC 1323
+					case TCPOPTION_WINDOW_SCALE: // RFC 1323
 					{
 						*opt_ptr++ = (u8_t)opt.getLength();
 						*opt_ptr++ = (u8_t)opt.getValues(0);
 						bytecount += 2;
 						break;
 					}
-					case TCPOPTION_SACK_PERMITTED: //RFC 2018
+					case TCPOPTION_SACK_PERMITTED: // RFC 2018
 					{
 						*opt_ptr++ = (u8_t)opt.getLength();
 						bytecount++;
 						break;
 					}
-					case TCPOPTION_SACK: //RFC 2018
+					case TCPOPTION_SACK: // RFC 2018
 					{
 						*opt_ptr++ = (u8_t)opt.getLength();
 						for(unsigned int i = 0; i < opt.getValuesArraySize(); i++)
@@ -1187,7 +1104,7 @@ list<cPacket*> _6lowpan::processIPv6Packet(IPv6Datagram* ipPacket, int gateIndex
 						bytecount++;
 						break;
 					}
-					case TCPOPTION_TIMESTAMP: //RFC 1323
+					case TCPOPTION_TIMESTAMP: // RFC 1323
 					{
 						*opt_ptr++ = (u8_t)opt.getLength();
 						*opt_ptr++ = opt.getValues(0) >> 24;
@@ -1202,7 +1119,7 @@ list<cPacket*> _6lowpan::processIPv6Packet(IPv6Datagram* ipPacket, int gateIndex
 						break;
 					}
 					default:
-						error("ERROR - 6LoWPAN Wrapper: Unsupported TCP option field.");
+						error("ERROR - 6LoWPAN Wrapper -> processIPv6Packet -> TCPSegment -> Unsupported TCP option field.\n");
 				}
 			}
 			while(bytecount % 4 != 0)
@@ -1232,7 +1149,7 @@ list<cPacket*> _6lowpan::processIPv6Packet(IPv6Datagram* ipPacket, int gateIndex
 
 		// TODO check and rework the TCP Payload check
 #if DEBUG
-		//lets simulate some payload as long as the payload in omnets tcp packet
+		// lets simulate some payload as long as the payload in omnets tcp packet
 		if(tcpPacket->getPayloadLength() > 0 || tcpPacket->getEncapsulatedPacket() != null)
 		{
 			uint16_t length;
@@ -1659,54 +1576,27 @@ IPv6Datagram* _6lowpan::processLowpanPacket(_6lowpanDatagram* packet)
 		else if(UIP_ICMP_BUF->type == ICMP6_DST_UNREACH)
 		{
 #if DEBUG
-            printf("\tprocessLowpanPacket: ICMPv6_DESTINATION_UNREACHABLE \t");
+            printf("\tprocessLowpanPacket: ICMPv6_DESTINATION_UNREACHABLE -> code = %d \n", (UIP_ICMP_BUF->icode));
 #endif /* DEBUG */
 			encapsulate = new ICMPv6DestUnreachableMsg(packet->getName());
 			((ICMPv6DestUnreachableMsg*)encapsulate)->setType(ICMPv6_DESTINATION_UNREACHABLE);
-			// test code -> shorter then the switch-case stuff below
-			//((ICMPv6DestUnreachableMsg*)encapsulate)->setCode(UIP_ICMP_BUF->icode);
-			switch(UIP_ICMP_BUF->icode)
-			{
-				case ICMP6_DST_UNREACH_NOROUTE:
-				{
-#if DEBUG
-            printf("-> setCode = 0 (NO_ROUTE_TO_DEST)\n");
-#endif /* DEBUG */
-					((ICMPv6DestUnreachableMsg*)encapsulate)->setCode(NO_ROUTE_TO_DEST);
-					break;
-				}
-				case ICMP6_DST_UNREACH_ADMIN:
-				{
-#if DEBUG
-            printf("-> setCode = 1 (COMM_WITH_DEST_PROHIBITED)\n");
-#endif /* DEBUG */
-                    ((ICMPv6DestUnreachableMsg*)encapsulate)->setCode(COMM_WITH_DEST_PROHIBITED);
-					break;
-				}
-				case ICMP6_DST_UNREACH_ADDR:
-				{
-#if DEBUG
-            printf("-> setCode = 3 (ADDRESS_UNREACHABLE)\n");
-#endif /* DEBUG */
-                    ((ICMPv6DestUnreachableMsg*)encapsulate)->setCode(ADDRESS_UNREACHABLE);
-					break;
-				}
-				case ICMP6_DST_UNREACH_NOPORT:
-				{
-#if DEBUG
-            printf("-> setCode = 4 (PORT_UNREACHABLE)\n");
-#endif /* DEBUG */
-                    ((ICMPv6DestUnreachableMsg*)encapsulate)->setCode(PORT_UNREACHABLE);
-					break;
-				}
-		    	default:
-		    	{
-#if DEBUG
-            printf("-> no message code to set \t \t ERROR CASE \n");
-#endif /* DEBUG */
-		    		break;
-		    	}
-			}
+
+			/**
+			 *  Matching of Contiki's icodes and OMNeT's ICMPv6Msg codes
+			 *  ICMP6_DST_UNREACH_NOROUTE     = 0 -> NO_ROUTE_TO_DEST           < no route to destination >
+			 *  ICMP6_DST_UNREACH_ADMIN       = 1 -> COMM_WITH_DEST_PROHIBITED  < administratively prohibited >
+			 *  ICMP6_DST_UNREACH_BEYONDSCOPE = 2 -> DEST_BEYOND_SRC_SCOPE (own fix) < beyond scope of source address >
+			 *  ICMP6_DST_UNREACH_ADDR        = 3 -> ADDRESS_UNREACHABLE        < address unreachable >
+			 *  ICMP6_DST_UNREACH_NOPORT      = 4 -> PORT_UNREACHABLE           < port unreachable >
+			 */
+            if (   (UIP_ICMP_BUF ->icode != NO_ROUTE_TO_DEST)
+                && (UIP_ICMP_BUF ->icode != COMM_WITH_DEST_PROHIBITED)
+                //&& (UIP_ICMP_BUF ->icode != DEST_BEYOND_SRC_SCOPE)    // not used at the moment
+                && (UIP_ICMP_BUF ->icode != ADDRESS_UNREACHABLE)
+                && (UIP_ICMP_BUF ->icode != PORT_UNREACHABLE))
+                error("6LoWPAN wrapper -> processLowpanPacket -> ICMPv6DestUnreachableMsg -> icode unspecified value of %d",(UIP_ICMP_BUF ->icode));
+
+            ((ICMPv6DestUnreachableMsg*)encapsulate)->setCode(UIP_ICMP_BUF->icode);
 		}
 		else if(UIP_ICMP_BUF->type == ICMP6_PACKET_TOO_BIG)
 		{
@@ -1720,83 +1610,48 @@ IPv6Datagram* _6lowpan::processLowpanPacket(_6lowpanDatagram* packet)
 		else if(UIP_ICMP_BUF->type == ICMP6_TIME_EXCEEDED)
 		{
 #if DEBUG
-            printf("\tprocessLowpanPacket: ICMPv6_TIME_EXCEEDED\t");
+            printf("\tprocessLowpanPacket: ICMPv6_TIME_EXCEEDED -> code = %d \n", (UIP_ICMP_BUF->icode));
 #endif /* DEBUG */
+
 			encapsulate = new ICMPv6TimeExceededMsg(packet->getName());
 			((ICMPv6TimeExceededMsg*)encapsulate)->setType(ICMPv6_TIME_EXCEEDED);
-			switch(UIP_ICMP_BUF->icode)
-			{
-				case ICMP6_TIME_EXCEED_TRANSIT:
-				{
-#if DEBUG
-            printf("->  setCode = 0 (ND_HOP_LIMIT_EXCEEDED)\n");
-#endif /* DEBUG */
-                    ((ICMPv6TimeExceededMsg*)encapsulate)->setCode(ND_HOP_LIMIT_EXCEEDED);
-					break;
-				}
-				case ICMP6_TIME_EXCEED_REASSEMBLY:
-				{
-#if DEBUG
-            printf("-> setCode = 1 (ND_FRAGMENT_REASSEMBLY_TIME)\n");
-#endif /* DEBUG */
-                    ((ICMPv6TimeExceededMsg*)encapsulate)->setCode(ND_FRAGMENT_REASSEMBLY_TIME);
-					break;
-				}
-				default:
-				{
-#if DEBUG
-            printf("-> no message code to set \t \t ERROR CASE \n");
-#endif /* DEBUG */
-					break;
-				}
-				}
+
+            /**
+             *  Matching of Contiki's icodes and OMNeT's ICMPv6Msg codes
+             *  ICMP6_TIME_EXCEED_TRANSIT     = 0 -> ND_HOP_LIMIT_EXCEEDED        < ttl==0 Hop limit exceeded in transit >
+             *  ICMP6_TIME_EXCEED_REASSEMBLY  = 1 -> ND_FRAGMENT_REASSEMBLY_TIME  < ttl==0 Fragment reassembly time exceeded >
+             */
+			if (   (UIP_ICMP_BUF->icode != ND_HOP_LIMIT_EXCEEDED)
+			    && (UIP_ICMP_BUF->icode != ND_FRAGMENT_REASSEMBLY_TIME))
+		        error("6LoWPAN wrapper -> processLowpanPacket -> ICMPv6TimeExceededMsg -> icode unspecified value of %d", (UIP_ICMP_BUF->icode));
+
+			((ICMPv6TimeExceededMsg*)encapsulate)->setCode(UIP_ICMP_BUF->icode);
 		}
 		else if(UIP_ICMP_BUF->type == ICMP6_PARAM_PROB)
 		{
 #if DEBUG
-            printf("\tprocessLowpanPacket: ICMPv6_PARAMETER_PROBLEM\t");
+            printf("\tprocessLowpanPacket: ICMPv6_PARAMETER_PROBLEM -> code = %d \n", (UIP_ICMP_BUF->icode));
 #endif /* DEBUG */
 			encapsulate = new ICMPv6ParamProblemMsg(packet->getName());
 			((ICMPv6ParamProblemMsg*)encapsulate)->setType(ICMPv6_PARAMETER_PROBLEM);
-			switch(UIP_ICMP_BUF->icode)
-			{
-				case ICMP6_PARAMPROB_HEADER:
-				{
-#if DEBUG
-            printf("-> setCode = 0 (ERROREOUS_HDR_FIELD)\n");
-#endif /* DEBUG */
-                    ((ICMPv6ParamProblemMsg*)encapsulate)->setCode(ERROREOUS_HDR_FIELD);
-					break;
-				}
-				case ICMP6_PARAMPROB_NEXTHEADER:
-				{
-#if DEBUG
-            printf("-> setCode = 1 (UNRECOGNIZED_NEXT_HDR_TYPE)\n");
-#endif /* DEBUG */
-                    ((ICMPv6ParamProblemMsg*)encapsulate)->setCode(UNRECOGNIZED_NEXT_HDR_TYPE);
-					break;
-				}
-				case ICMP6_PARAMPROB_OPTION:
-				{
-#if DEBUG
-            printf("-> setCode = 2 (UNRECOGNIZED_IPV6_OPTION)\n");
-#endif /* DEBUG */
-                    ((ICMPv6ParamProblemMsg*)encapsulate)->setCode(UNRECOGNIZED_IPV6_OPTION);
-					break;
-				}
-				default:
-				{
-#if DEBUG
-            printf("-> no message code to set \t \t ERROR CASE \n");
-#endif /* DEBUG */
-					break;
-				}
-			}
+
+			/**
+			 *  Matching of Contiki's icodes and OMNeT's ICMPv6Msg codes
+			 *  ICMP6_PARAMPROB_HEADER      = 0 -> ERROREOUS_HDR_FIELD          < Erroneous header field encountered >
+			 *  ICMP6_PARAMPROB_NEXTHEADER  = 1 -> UNRECOGNIZED_NEXT_HDR_TYPE   < Unrecognized Next Header type encountered >
+			 *  ICMP6_PARAMPROB_OPTION      = 2 -> UNRECOGNIZED_IPV6_OPTION     < Unrecognized IPv6 option encountered >
+			 */
+			if (   (UIP_ICMP_BUF->icode != ERROREOUS_HDR_FIELD)
+			    && (UIP_ICMP_BUF->icode != UNRECOGNIZED_NEXT_HDR_TYPE)
+			    && (UIP_ICMP_BUF->icode != UNRECOGNIZED_IPV6_OPTION))
+			    error("6LoWPAN wrapper -> processLowpanPacket -> ICMPv6ParamProblemMsg -> icode unspecified value of %d", (UIP_ICMP_BUF->icode));
+
+			((ICMPv6ParamProblemMsg*)encapsulate)->setCode(UIP_ICMP_BUF->icode);
 		}
 		else if(UIP_ICMP_BUF->type == ICMP6_ECHO_REQUEST)
 		{
 #if DEBUG
-            printf("\tprocessLowpanPacket: ICMPv6_ECHO_REQUEST\n");
+            printf("\tprocessLowpanPacket: ICMPv6_ECHO_REQUEST -> code = %d \n", (UIP_ICMP_BUF->icode));
 #endif /* DEBUG */
 			encapsulate = new ICMPv6EchoRequestMsg(packet->getName());
 			((ICMPv6EchoRequestMsg*)encapsulate)->setCode(UIP_ICMP_BUF->icode);
@@ -1805,7 +1660,7 @@ IPv6Datagram* _6lowpan::processLowpanPacket(_6lowpanDatagram* packet)
 		else if(UIP_ICMP_BUF->type == ICMP6_ECHO_REPLY)
 		{
 #if DEBUG
-            printf("\tprocessLowpanPacket: ICMPv6_ECHO_REPLY\n");
+            printf("\tprocessLowpanPacket: ICMPv6_ECHO_REPLY -> code = %d \n", (UIP_ICMP_BUF->icode));
 #endif /* DEBUG */
 			encapsulate = new ICMPv6EchoReplyMsg(packet->getName());
 			((ICMPv6EchoReplyMsg*)encapsulate)->setCode(UIP_ICMP_BUF->icode);
@@ -1887,15 +1742,15 @@ IPv6Datagram* _6lowpan::processLowpanPacket(_6lowpanDatagram* packet)
 				bytecount--;
 				switch(opt.getKind())
 				{
-					case TCPOPTION_END_OF_OPTION_LIST: //RFC 793
+					case TCPOPTION_END_OF_OPTION_LIST: // RFC 793
 					{
 						break;
 					}
-					case TCPOPTION_NO_OPERATION: //RFC 793
+					case TCPOPTION_NO_OPERATION: // RFC 793
 					{
 						break;
 					}
-					case TCPOPTION_MAXIMUM_SEGMENT_SIZE: //RFC 793
+					case TCPOPTION_MAXIMUM_SEGMENT_SIZE: // RFC 793
 					{
 						opt.setLength(*opt_ptr++);
 						opt.setValuesArraySize(1);
@@ -1904,7 +1759,7 @@ IPv6Datagram* _6lowpan::processLowpanPacket(_6lowpanDatagram* packet)
 						bytecount -= 3;
 						break;
 					}
-					case TCPOPTION_WINDOW_SCALE: //RFC 1323
+					case TCPOPTION_WINDOW_SCALE: // RFC 1323
 					{
 						opt.setLength(*opt_ptr++);
 						opt.setValuesArraySize(1);
@@ -1912,13 +1767,13 @@ IPv6Datagram* _6lowpan::processLowpanPacket(_6lowpanDatagram* packet)
 						bytecount -= 2;
 						break;
 					}
-					case TCPOPTION_SACK_PERMITTED: //RFC 2018
+					case TCPOPTION_SACK_PERMITTED: // RFC 2018
 					{
 						opt.setLength(*opt_ptr++);
 						bytecount--;
 						break;
 					}
-					case TCPOPTION_SACK: //RFC 2018
+					case TCPOPTION_SACK: // RFC 2018
 					{
 						opt.setLength(*opt_ptr++);
 						opt.setValuesArraySize((opt.getLength() - 2) / 4);
@@ -1931,7 +1786,7 @@ IPv6Datagram* _6lowpan::processLowpanPacket(_6lowpanDatagram* packet)
 						bytecount--;
 						break;
 					}
-					case TCPOPTION_TIMESTAMP: //RFC 1323
+					case TCPOPTION_TIMESTAMP: // RFC 1323
 					{
 						opt.setLength(*opt_ptr++);
 						opt.setValuesArraySize(2);
