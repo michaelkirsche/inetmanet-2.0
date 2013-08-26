@@ -59,12 +59,14 @@ enum ICMPv6Type
 //
 enum ICMPv6DEST_UN
 {
-
-    NO_ROUTE_TO_DEST = 0;
-    COMM_WITH_DEST_PROHIBITED = 1;
-    //2 - NOT ASSIGNED
-    ADDRESS_UNREACHABLE = 3;
-    PORT_UNREACHABLE = 4;
+	// according to RFC 4443 >> http://tools.ietf.org/html/rfc4443
+    NO_ROUTE_TO_DEST = 0;			// 0 - No route to destination
+    COMM_WITH_DEST_PROHIBITED = 1;	// 1 - Communication with destination administratively prohibited
+    DEST_BEYOND_SRC_SCOPE = 2;		// 2 - Beyond scope of source address
+    ADDRESS_UNREACHABLE = 3;		// 3 - Address unreachable
+    PORT_UNREACHABLE = 4;			// 4 - Port unreachable
+    // 5 - Source address failed ingress/egress policy
+    // 6 - Reject route to destination
 }
 
 
