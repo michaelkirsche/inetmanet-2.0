@@ -921,39 +921,56 @@ list<cPacket*> _6lowpan::processIPv6Packet(IPv6Datagram* ipPacket, int gateIndex
 		else if(dynamic_cast<ICMPv6DestUnreachableMsg*>(icmpPacket) != null)
 		{
 #if DEBUG
-        printf("\tprocessing ICMPv6_DESTINATION_UNREACHABLE packet...\n");
+        printf("\tprocessing ICMPv6_DESTINATION_UNREACHABLE packet\t");
 #endif /* DEBUG */
 			UIP_ICMP_BUF->type = ICMP6_DST_UNREACH;
-			switch(icmpPacket->getType())
+			switch(((ICMPv6DestUnreachableMsg*)icmpPacket)->getCode())
 			{
 				case NO_ROUTE_TO_DEST:
 				{
+#if DEBUG
+        printf("-> with code = 0 (NO_ROUTE_TO_DESTINATION)\n");
+#endif /* DEBUG */
 					UIP_ICMP_BUF->icode = ICMP6_DST_UNREACH_NOROUTE;
 					break;
 				}
 				case COMM_WITH_DEST_PROHIBITED:
 				{
-					UIP_ICMP_BUF->icode = ICMP6_DST_UNREACH_ADMIN;
+#if DEBUG
+        printf("-> with code = 1 (COMM_WITH_DEST_PROHIBITED)\n");
+#endif /* DEBUG */
+				    UIP_ICMP_BUF->icode = ICMP6_DST_UNREACH_ADMIN;
 					break;
 				}
 				case ADDRESS_UNREACHABLE:
 				{
+#if DEBUG
+        printf("-> with code = 3 (ADDRESS_UNREACHABLE)\n");
+#endif /* DEBUG */
 					UIP_ICMP_BUF->icode = ICMP6_DST_UNREACH_ADDR;
 					break;
 				}
 				case PORT_UNREACHABLE:
 				{
+#if DEBUG
+        printf("-> with code = 4 (PORT_UNREACHABLE)\n");
+#endif /* DEBUG */
 					UIP_ICMP_BUF->icode = ICMP6_DST_UNREACH_NOPORT;
 					break;
 				}
 				default:
+				{
+#if DEBUG
+        printf("-> without code \t \t ERROR CASE !!!\n");
+#endif /* DEBUG */
 					break;
+				}
 			}
 		}
 		else if(dynamic_cast<ICMPv6PacketTooBigMsg*>(icmpPacket) != null)
 		{
 #if DEBUG
-        printf("\tprocessing ICMPv6_PACKET_TOO_BIG packet...\n");
+        printf("\tprocessing ICMPv6_PACKET_TOO_BIG packet -> with code = 0\n");
 #endif /* DEBUG */
 			UIP_ICMP_BUF->type = ICMP6_PACKET_TOO_BIG;
 			UIP_ICMP_BUF->icode = 0;
@@ -961,50 +978,75 @@ list<cPacket*> _6lowpan::processIPv6Packet(IPv6Datagram* ipPacket, int gateIndex
 		else if(dynamic_cast<ICMPv6TimeExceededMsg*>(icmpPacket) != null)
 		{
 #if DEBUG
-        printf("\tprocessing ICMPv6_TIME_EXCEEDED packet...\n");
+        printf("\tprocessing ICMPv6_TIME_EXCEEDED packet\t");
 #endif /* DEBUG */
 			UIP_ICMP_BUF->type = ICMP6_TIME_EXCEEDED;
-			switch(icmpPacket->getType())
+			switch(((ICMPv6TimeExceededMsg*)icmpPacket)->getCode())
 			{
 				case ND_HOP_LIMIT_EXCEEDED:
 				{
+#if DEBUG
+        printf("-> with code = 0 (ND_HOP_LIMIT_EXCEEDED)\n");
+#endif /* DEBUG */
 					UIP_ICMP_BUF->icode = ICMP6_TIME_EXCEED_TRANSIT;
 					break;
 				}
 				case ND_FRAGMENT_REASSEMBLY_TIME:
 				{
+#if DEBUG
+        printf("-> with code = 1 (ND_FRAGMENT_REASSEMBLY_TIME)\n");
+#endif /* DEBUG */
 					UIP_ICMP_BUF->icode = ICMP6_TIME_EXCEED_REASSEMBLY;
 					break;
 				}
 				default:
+				{
+#if DEBUG
+        printf("-> without code \t \t ERROR CASE !!!!\n");
+#endif /* DEBUG */
 					break;
+				}
 			}
 		}
 		else if(dynamic_cast<ICMPv6ParamProblemMsg*>(icmpPacket) != null)
 		{
 #if DEBUG
-        printf("\tprocessing ICMPv6_PARAMETER_PROBLEM packet...\n");
+        printf("\tprocessing ICMPv6_PARAMETER_PROBLEM packet\t");
 #endif /* DEBUG */
 		    UIP_ICMP_BUF->type = ICMP6_PARAM_PROB;
-			switch(icmpPacket->getType())
+			switch(((ICMPv6ParamProblemMsg*)icmpPacket)->getCode())
 			{
 				case ERROREOUS_HDR_FIELD:
 				{
+#if DEBUG
+        printf("-> with code = 0 (ERROREOUS_HDR_FIELD)\n");
+#endif /* DEBUG */
 					UIP_ICMP_BUF->icode = ICMP6_PARAMPROB_HEADER;
 					break;
 				}
 				case UNRECOGNIZED_NEXT_HDR_TYPE:
 				{
+#if DEBUG
+        printf("-> with code = 1 (UNRECOGNIZED_NEXT_HDR_TYPE)\n");
+#endif /* DEBUG */
 					UIP_ICMP_BUF->icode = ICMP6_PARAMPROB_NEXTHEADER;
 					break;
 				}
 				case UNRECOGNIZED_IPV6_OPTION:
 				{
+#if DEBUG
+        printf("-> with code = 2 (UNRECOGNIZED_IPV6_OPTION)\n");
+#endif /* DEBUG */
 					UIP_ICMP_BUF->icode = ICMP6_PARAMPROB_OPTION;
 					break;
 				}
 				default:
-					break;
+				{
+#if DEBUG
+        printf("-> without code \t \t ERROR CASE\n");
+#endif /* DEBUG */
+				    break;
+				}
 			}
 		}
 		else if(dynamic_cast<ICMPv6EchoRequestMsg*>(icmpPacket) != null)
@@ -1617,33 +1659,53 @@ IPv6Datagram* _6lowpan::processLowpanPacket(_6lowpanDatagram* packet)
 		else if(UIP_ICMP_BUF->type == ICMP6_DST_UNREACH)
 		{
 #if DEBUG
-            printf("\tprocessLowpanPacket: ICMPv6_DESTINATION_UNREACHABLE\n");
+            printf("\tprocessLowpanPacket: ICMPv6_DESTINATION_UNREACHABLE \t");
 #endif /* DEBUG */
 			encapsulate = new ICMPv6DestUnreachableMsg(packet->getName());
+			((ICMPv6DestUnreachableMsg*)encapsulate)->setType(ICMPv6_DESTINATION_UNREACHABLE);
+			// test code -> shorter then the switch-case stuff below
+			//((ICMPv6DestUnreachableMsg*)encapsulate)->setCode(UIP_ICMP_BUF->icode);
 			switch(UIP_ICMP_BUF->icode)
 			{
 				case ICMP6_DST_UNREACH_NOROUTE:
 				{
-					encapsulate->setType(NO_ROUTE_TO_DEST);
+#if DEBUG
+            printf("-> setCode = 0 (NO_ROUTE_TO_DEST)\n");
+#endif /* DEBUG */
+					((ICMPv6DestUnreachableMsg*)encapsulate)->setCode(NO_ROUTE_TO_DEST);
 					break;
 				}
 				case ICMP6_DST_UNREACH_ADMIN:
 				{
-					encapsulate->setType(COMM_WITH_DEST_PROHIBITED);
+#if DEBUG
+            printf("-> setCode = 1 (COMM_WITH_DEST_PROHIBITED)\n");
+#endif /* DEBUG */
+                    ((ICMPv6DestUnreachableMsg*)encapsulate)->setCode(COMM_WITH_DEST_PROHIBITED);
 					break;
 				}
 				case ICMP6_DST_UNREACH_ADDR:
 				{
-					encapsulate->setType(ADDRESS_UNREACHABLE);
+#if DEBUG
+            printf("-> setCode = 3 (ADDRESS_UNREACHABLE)\n");
+#endif /* DEBUG */
+                    ((ICMPv6DestUnreachableMsg*)encapsulate)->setCode(ADDRESS_UNREACHABLE);
 					break;
 				}
 				case ICMP6_DST_UNREACH_NOPORT:
 				{
-					encapsulate->setType(PORT_UNREACHABLE);
+#if DEBUG
+            printf("-> setCode = 4 (PORT_UNREACHABLE)\n");
+#endif /* DEBUG */
+                    ((ICMPv6DestUnreachableMsg*)encapsulate)->setCode(PORT_UNREACHABLE);
 					break;
 				}
 		    	default:
+		    	{
+#if DEBUG
+            printf("-> no message code to set \t \t ERROR CASE \n");
+#endif /* DEBUG */
 		    		break;
+		    	}
 			}
 		}
 		else if(UIP_ICMP_BUF->type == ICMP6_PACKET_TOO_BIG)
@@ -1652,55 +1714,83 @@ IPv6Datagram* _6lowpan::processLowpanPacket(_6lowpanDatagram* packet)
             printf("\tprocessLowpanPacket: ICMPv6_PACKET_TOO_BIG\n");
 #endif /* DEBUG */
 			encapsulate = new ICMPv6PacketTooBigMsg(packet->getName());
-			encapsulate->setType(ICMPv6_PACKET_TOO_BIG);
+			((ICMPv6PacketTooBigMsg*)encapsulate)->setType(ICMPv6_PACKET_TOO_BIG);
+			((ICMPv6PacketTooBigMsg*)encapsulate)->setCode(0);
 		}
 		else if(UIP_ICMP_BUF->type == ICMP6_TIME_EXCEEDED)
 		{
 #if DEBUG
-            printf("\tprocessLowpanPacket: ICMPv6_TIME_EXCEEDED\n");
+            printf("\tprocessLowpanPacket: ICMPv6_TIME_EXCEEDED\t");
 #endif /* DEBUG */
 			encapsulate = new ICMPv6TimeExceededMsg(packet->getName());
+			((ICMPv6TimeExceededMsg*)encapsulate)->setType(ICMPv6_TIME_EXCEEDED);
 			switch(UIP_ICMP_BUF->icode)
 			{
 				case ICMP6_TIME_EXCEED_TRANSIT:
 				{
-					encapsulate->setType(ND_HOP_LIMIT_EXCEEDED);
+#if DEBUG
+            printf("->  setCode = 0 (ND_HOP_LIMIT_EXCEEDED)\n");
+#endif /* DEBUG */
+                    ((ICMPv6TimeExceededMsg*)encapsulate)->setCode(ND_HOP_LIMIT_EXCEEDED);
 					break;
 				}
 				case ICMP6_TIME_EXCEED_REASSEMBLY:
 				{
-					encapsulate->setType(ND_FRAGMENT_REASSEMBLY_TIME);
+#if DEBUG
+            printf("-> setCode = 1 (ND_FRAGMENT_REASSEMBLY_TIME)\n");
+#endif /* DEBUG */
+                    ((ICMPv6TimeExceededMsg*)encapsulate)->setCode(ND_FRAGMENT_REASSEMBLY_TIME);
 					break;
 				}
 				default:
+				{
+#if DEBUG
+            printf("-> no message code to set \t \t ERROR CASE \n");
+#endif /* DEBUG */
 					break;
+				}
 				}
 		}
 		else if(UIP_ICMP_BUF->type == ICMP6_PARAM_PROB)
 		{
 #if DEBUG
-            printf("\tprocessLowpanPacket: ICMPv6_PARAMETER_PROBLEM\n");
+            printf("\tprocessLowpanPacket: ICMPv6_PARAMETER_PROBLEM\t");
 #endif /* DEBUG */
 			encapsulate = new ICMPv6ParamProblemMsg(packet->getName());
+			((ICMPv6ParamProblemMsg*)encapsulate)->setType(ICMPv6_PARAMETER_PROBLEM);
 			switch(UIP_ICMP_BUF->icode)
 			{
 				case ICMP6_PARAMPROB_HEADER:
 				{
-					encapsulate->setType(ERROREOUS_HDR_FIELD);
+#if DEBUG
+            printf("-> setCode = 0 (ERROREOUS_HDR_FIELD)\n");
+#endif /* DEBUG */
+                    ((ICMPv6ParamProblemMsg*)encapsulate)->setCode(ERROREOUS_HDR_FIELD);
 					break;
 				}
 				case ICMP6_PARAMPROB_NEXTHEADER:
 				{
-					encapsulate->setType(UNRECOGNIZED_NEXT_HDR_TYPE);
+#if DEBUG
+            printf("-> setCode = 1 (UNRECOGNIZED_NEXT_HDR_TYPE)\n");
+#endif /* DEBUG */
+                    ((ICMPv6ParamProblemMsg*)encapsulate)->setCode(UNRECOGNIZED_NEXT_HDR_TYPE);
 					break;
 				}
 				case ICMP6_PARAMPROB_OPTION:
 				{
-					encapsulate->setType(UNRECOGNIZED_IPV6_OPTION);
+#if DEBUG
+            printf("-> setCode = 2 (UNRECOGNIZED_IPV6_OPTION)\n");
+#endif /* DEBUG */
+                    ((ICMPv6ParamProblemMsg*)encapsulate)->setCode(UNRECOGNIZED_IPV6_OPTION);
 					break;
 				}
 				default:
+				{
+#if DEBUG
+            printf("-> no message code to set \t \t ERROR CASE \n");
+#endif /* DEBUG */
 					break;
+				}
 			}
 		}
 		else if(UIP_ICMP_BUF->type == ICMP6_ECHO_REQUEST)
@@ -1710,7 +1800,7 @@ IPv6Datagram* _6lowpan::processLowpanPacket(_6lowpanDatagram* packet)
 #endif /* DEBUG */
 			encapsulate = new ICMPv6EchoRequestMsg(packet->getName());
 			((ICMPv6EchoRequestMsg*)encapsulate)->setCode(UIP_ICMP_BUF->icode);
-			encapsulate->setType(ICMPv6_ECHO_REQUEST);
+			((ICMPv6EchoRequestMsg*)encapsulate)->setType(ICMPv6_ECHO_REQUEST);
 		}
 		else if(UIP_ICMP_BUF->type == ICMP6_ECHO_REPLY)
 		{
@@ -1719,7 +1809,7 @@ IPv6Datagram* _6lowpan::processLowpanPacket(_6lowpanDatagram* packet)
 #endif /* DEBUG */
 			encapsulate = new ICMPv6EchoReplyMsg(packet->getName());
 			((ICMPv6EchoReplyMsg*)encapsulate)->setCode(UIP_ICMP_BUF->icode);
-			encapsulate->setType(ICMPv6_ECHO_REPLY);
+			((ICMPv6EchoReplyMsg*)encapsulate)->setType(ICMPv6_ECHO_REPLY);
 		}
 
 		encapsulate->setKind(packet->getTransportMessageKind());
