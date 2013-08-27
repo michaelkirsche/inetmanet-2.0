@@ -1,6 +1,6 @@
 //
 // Copyright (C) 2008 Irene Ruengeler
-// Copyright (C) 2009 Thomas Dreibholz
+// Copyright (C) 2009-2012 Thomas Dreibholz
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -61,6 +61,11 @@ class INET_API SCTPClient : public cSimpleModule, public SCTPSocket::CallbackInt
         cMessage* timeMsg;
         cMessage* stopTimer;
         cMessage* primaryChangeTimer;
+
+        int32 chunksAbandoned;
+        std::map<uint32,uint32> streamRequestLengthMap;
+        std::map<uint32,uint32> streamRequestRatioMap;
+        std::map<uint32,uint32> streamRequestRatioSendMap;
 
         /** Utility: sends a request to the server */
         void sendRequest(bool last = true);
@@ -147,6 +152,8 @@ class INET_API SCTPClient : public cSimpleModule, public SCTPSocket::CallbackInt
         void sendqueueFullArrived(int32 connId);
         void sendqueueAbatedArrived(int32 connId, uint64 buffer);
         void addressAddedArrived(int32 assocId, IPvXAddress remoteAddr);
+        void msgAbandonedArrived(int32 assocId);
+        void sendStreamResetNotification();
 };
 
 #endif

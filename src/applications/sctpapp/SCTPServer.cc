@@ -1,6 +1,6 @@
 //
 // Copyright (C) 2008 Irene Ruengeler
-// Copyright (C) 2009 Thomas Dreibholz
+// Copyright (C) 2009-2012 Thomas Dreibholz
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -78,10 +78,19 @@ void SCTPServer::initialize()
     else
         socket->bindx(addresses, port);
 
-    socket->listen(true, par("numPacketsToSendPerClient").longValue(), messagesToPush);
+    socket->listen(true, (bool)par("streamReset"), par("numPacketsToSendPerClient"), messagesToPush);
     sctpEV3 << "SCTPServer::initialized listen port=" << port << "\n";
     schedule = false;
     shutdownReceived = false;
+    uint32 streamNum = 0;
+    cStringTokenizer tokenizer(par("streamPriorities").stringValue());
+    while (tokenizer.hasMoreTokens())
+    {
+        const char *token = tokenizer.nextToken();
+        socket->setStreamPriority(streamNum, (uint32) atoi(token));
+
+        streamNum++;
+    }
 }
 
 void SCTPServer::sendOrSchedule(cPacket *msg)
@@ -109,6 +118,8 @@ void SCTPServer::generateAndSend()
     cmd->setSendUnordered(ordered ? COMPLETE_MESG_ORDERED : COMPLETE_MESG_UNORDERED);
     lastStream = (lastStream+1)%outboundStreams;
     cmd->setSid(lastStream);
+    cmd->setPrValue(par("prValue"));
+    cmd->setPrMethod((int32)par("prMethod"));
     if (queueSize>0 && numRequestsToSend > 0 && count < queueSize*2)
         cmd->setLast(false);
     else
@@ -387,6 +398,7 @@ void SCTPServer::handleMessage(cMessage *msg)
                     bytesSent += smsg->getBitLength()/8;
                     cmd->setSendUnordered(cmd->getSendUnordered());
                     lastStream = (lastStream+1)%outboundStreams;
+                    cmd->setPrValue(0);
                     cmd->setSid(lastStream);
                     cmd->setLast(true);
                     cmsg->encapsulate(smsg);
@@ -421,6 +433,14 @@ void SCTPServer::handleMessage(cMessage *msg)
                 delete msg;
                 break;
             }
+            case SCTP_I_SEND_STREAMS_RESETTED:
+            case SCTP_I_RCV_STREAMS_RESETTED:
+            {
+                ev << "Streams have been resetted\n";
+                delete msg;
+                break;
+            }
+
             case SCTP_I_CLOSED:
                 if (delayTimer->isScheduled())
                     cancelEvent(delayTimer);
