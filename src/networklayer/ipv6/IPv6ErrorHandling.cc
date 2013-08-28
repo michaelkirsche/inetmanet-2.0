@@ -49,7 +49,8 @@ void IPv6ErrorHandling::handleMessage(cMessage *msg)
     else if (dynamic_cast<ICMPv6PacketTooBigMsg *>(icmpv6Msg))
     {
         ICMPv6PacketTooBigMsg *msg2 = (ICMPv6PacketTooBigMsg *)icmpv6Msg;
-        code = 0;
+        code = msg2->getCode();
+        EV << " Code: " << code;
     }
     else if (dynamic_cast<ICMPv6TimeExceededMsg *>(icmpv6Msg))
     {

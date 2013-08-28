@@ -142,6 +142,9 @@ class _6lowpan : public cSimpleModule
     virtual void handleMessage(cMessage *msg);
     virtual int numInitStages() const  {return 2;}
 
+  public:
+    _6lowpan() { configuration = 0; }
+
   private:
     struct contiki_config
     {
