@@ -19,7 +19,7 @@
 package inet.examples.manetrouting.dynamicNodeCreation;
 
 
-import inet.nodes.inet.AdhocHost;
+import inet.nodes.inet.WirelessHost;
 import inet.linklayer.ieee80211mesh.nodes.HostMesh;
 import inet.linklayer.ieee80211mesh.nodes.HostSta;
 import inet.linklayer.ieee80211mesh.nodes.BasicMobileManetMesh;
@@ -30,6 +30,7 @@ import inet.nodes.ethernet.EtherSwitch;
 import inet.linklayer.ieee80211mesh.nodes.ApMeshRelay;
 import ned.DatarateChannel;
 import inet.mobility.models.LaptopModelManager;
+import inet.networklayer.autorouting.ipv4.IPv4NetworkConfigurator;
 
 network meshTest
 {
@@ -121,10 +122,11 @@ network meshTest
         }
         laptopModelManager: LaptopModelManager {
 
-            @display("p=134,24;is=s");
+            @display("p=31,23;is=s");
         }
-
-
+        channelControl: ChannelControl {
+            @display("p=80,70;i=misc/sun");
+        }
 }
 
 

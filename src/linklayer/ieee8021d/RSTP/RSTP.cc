@@ -7,16 +7,17 @@
 * @version 1.0
 * @date Feb 2011
 ******************************************************/
-#include "RSTP.h"
-#include "Ethernet.h"
 #include "EtherFrame_m.h"
 #include "MACRelayUnitBase.h"
+#include "EtherMACBase.h"
+#include "Ethernet.h"
 #include "Admacrelay.h"
-#include "EtherMAC.h"
 #include "Cache1QAccess.h"
 #include "AdmacrelayAccess.h"
 #include "XMLUtils.h"
 #include "Relay1QAccess.h"
+#include "RSTP.h"
+
 
 std::ostream& operator<<(std::ostream& os, const PortStatus& e)
 {
@@ -73,12 +74,13 @@ void RSTP::initialize(int stage)
 		}
 		if(macUnit!=NULL)
 		{
-			address.setAddress(check_and_cast<EtherMAC *>(macUnit)->par("address"));
+		    EtherMACBase *macBase = check_and_cast<EtherMACBase *>(macUnit);
+		    address = macBase->getMACAddress();
 		}
 		else
 		{
-			ev<<"macB[0] not found. Is not this module connected to another BEB?"<<endl;
-			ev<<"Setting AAAAAA000001 as backbone mac address."<<endl;
+			EV << "macB[0] not found. Is not this module connected to another BEB?"<<endl;
+			EV << "Setting AAAAAA000001 as backbone mac address."<<endl;
 			address.setAddress("AAAAAA000001");
 		}
 		autoEdge=par("autoEdge");
@@ -107,7 +109,7 @@ void RSTP::initialize(int stage)
 
 
 		//RSTP module initialization. Puertos will save per port RSTP info.
-		for(int i=0;i<(admac->gateSize("GatesOut"));i++)
+		for(int i=0;i<(admac->gateSize("ifOut"));i++)
 		{
 			Puertos.push_back(* new PortStatus());
 		}
@@ -1044,7 +1046,7 @@ void RSTP::initPorts()
 
 		if(dynamic_cast<Admacrelay *>(admac)!=NULL)
 		{
-			cGate * gate=admac->gate("GatesOut",j);
+			cGate * gate=admac->gate("ifOut",j);
 			if(gate!=NULL)
 			{
 				gate=gate->getNextGate();
@@ -1054,7 +1056,7 @@ void RSTP::initPorts()
 		}
 		else if(dynamic_cast<Relay1Q *>(admac)!=NULL)
 		{
-			cGate * gate=admac->gate("GatesOut",j);
+			cGate * gate=admac->gate("ifOut",j);
 			if(gate!=NULL)
 			{
 				gate=gate->getNextGate();
@@ -1332,12 +1334,12 @@ void RSTP::scheduleUpTimeEvent(cXMLElement * event)
 void RSTP::handleUpTimeEvent(cMessage * msg)
 {//Handles scheduled "UPTimeEvents"
 
-	if(msg->getKind()==UP)
+	if(msg->getKind() == PORTUP)
 	{
 		initPorts();
 		up=true;
 	}
-	else if(msg->getKind()==DOWN)
+	else if(msg->getKind() == PORTDOWN)
 	{
 		for(unsigned int i=0;i<Puertos.size();i++)
 		{

@@ -9,8 +9,8 @@
 ******************************************************/
 
 #include "PortFilt1ah.h"
-#include "MVRPDU.h"
-#include "BPDU.h"
+#include "MVRPDU_m.h"
+#include "BPDU_m.h"
 #include <XMLUtils.h>
 
 
@@ -69,7 +69,7 @@ void PortFilt1ah::handleMessage(cMessage *msg)
 bool PortFilt1ah::isEdge()
 {//Returns Edge parameter.
 	bool result=false;
-	cGate * gate=this->gate("GatesOut",0);
+	cGate * gate=this->gate("ifOut",0);
 	if(gate!=NULL)
 	{
 		gate=gate->getNextGate();

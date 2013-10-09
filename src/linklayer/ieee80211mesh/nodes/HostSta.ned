@@ -39,6 +39,7 @@ module HostSta extends WirelessHost
         @display("i=device/cellphone");
         wlan[*].typename = "Ieee80211Nic";
         IPForward = default(true);
+        networkLayer.configurator.networkConfiguratorModule = default("");
     submodules:
         autoconfigurator: HostAutoConfigurator2 {
             @display("p=53,71");

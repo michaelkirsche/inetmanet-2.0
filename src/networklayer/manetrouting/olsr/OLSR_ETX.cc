@@ -90,7 +90,8 @@ OLSR_ETX::initialize(int stage)
     if (stage==4)
     {
         if (isInMacLayer())
-            OlsrAddressSize::ADDR_SIZE = 6;
+            this->setAddressSize(6);
+        OlsrAddressSize::ADDR_SIZE = this->getAddressSize();
  	///
  	/// \brief Period at which a node must cite every link and every neighbor.
  	///
@@ -168,7 +169,7 @@ OLSR_ETX::initialize(int stage)
         midTimer = new OLSR_MidTimer(); ///< Timer for sending MID messages.
         linkQualityTimer = new OLSR_ETX_LinkQualityTimer();
 
-        state_ptr = state_etx_ptr = new OLSR_ETX_state();
+        state_ptr = state_etx_ptr = new OLSR_ETX_state(&this->parameter_);
 
         for (int i = 0; i< getNumWlanInterfaces(); i++)
         {

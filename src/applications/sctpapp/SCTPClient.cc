@@ -20,6 +20,8 @@
 #include "SCTPClient.h"
 
 #include "IPvXAddressResolver.h"
+#include "ModuleAccess.h"
+#include "NodeStatus.h"
 #include "SCTPAssociation.h"
 #include "SCTPCommand_m.h"
 
@@ -38,71 +40,84 @@ simsignal_t SCTPClient::sentPkSignal = SIMSIGNAL_NULL;
 simsignal_t SCTPClient::rcvdPkSignal = SIMSIGNAL_NULL;
 simsignal_t SCTPClient::echoedPkSignal = SIMSIGNAL_NULL;
 
-void SCTPClient::initialize()
+void SCTPClient::initialize(int stage)
 {
-    sctpEV3 << "initialize SCTP Client\n";
-    numSessions = numBroken = packetsSent = packetsRcvd = bytesSent = echoedBytesSent = bytesRcvd = 0;
-    WATCH(numSessions);
-    WATCH(numBroken);
-    WATCH(packetsSent);
-    WATCH(packetsRcvd);
-    WATCH(bytesSent);
-    WATCH(bytesRcvd);
-
-    sentPkSignal = registerSignal("sentPk");
-    rcvdPkSignal = registerSignal("rcvdPk");
-    echoedPkSignal = registerSignal("echoedPk");
-
-    // parameters
-    const char *addressesString = par("localAddress");
-    AddressVector addresses = IPvXAddressResolver().resolve(cStringTokenizer(addressesString).asVector());
-    int32 port = par("localPort");
-    echo = par("echo").boolValue();
-    ordered = par("ordered").boolValue();
-    finishEndsSimulation = (bool)par("finishEndsSimulation");
-
-    if (addresses.size() == 0)
-        socket.bind(port);
-    else
-        socket.bindx(addresses, port);
-
-    socket.setCallbackObject(this);
-    socket.setOutputGate(gate("sctpOut"));
-    setStatusString("waiting");
-
-    timeMsg = new cMessage("CliAppTimer");
-    numRequestsToSend = 0;
-    numPacketsToReceive = 0;
-    queueSize = par("queueSize");
-    WATCH(numRequestsToSend);
-    recordScalar("ums", (uint32) par("requestLength"));
-    timeMsg->setKind(MSGKIND_CONNECT);
-    scheduleAt((simtime_t)par("startTime"), timeMsg);
-    sendAllowed = true;
-    bufferSize = 0;
-
-    if ((simtime_t)par("stopTime")!=0)
+    sctpEV3 << "initialize SCTP Client stage "<< stage << endl;
+    if (stage == 0)
     {
-        stopTimer = new cMessage("StopTimer");
-        stopTimer->setKind(MSGKIND_STOP);
-        scheduleAt((simtime_t)par("stopTime"), stopTimer);
-        timer = true;
+        numSessions = numBroken = packetsSent = packetsRcvd = bytesSent = echoedBytesSent = bytesRcvd = 0;
+        WATCH(numSessions);
+        WATCH(numBroken);
+        WATCH(packetsSent);
+        WATCH(packetsRcvd);
+        WATCH(bytesSent);
+        WATCH(bytesRcvd);
+
+        sentPkSignal = registerSignal("sentPk");
+        rcvdPkSignal = registerSignal("rcvdPk");
+        echoedPkSignal = registerSignal("echoedPk");
+
+        // parameters
+        const char *addressesString = par("localAddress");
+        AddressVector addresses = IPvXAddressResolver().resolve(cStringTokenizer(addressesString).asVector());
+        int32 port = par("localPort");
+        echo = par("echo").boolValue();
+        ordered = par("ordered").boolValue();
+        finishEndsSimulation = (bool)par("finishEndsSimulation");
+
+        if (addresses.size() == 0)
+            socket.bind(port);
+        else
+            socket.bindx(addresses, port);
+
+        socket.setCallbackObject(this);
+        socket.setOutputGate(gate("sctpOut"));
+        setStatusString("waiting");
+
+        timeMsg = new cMessage("CliAppTimer");
+        numRequestsToSend = 0;
+        numPacketsToReceive = 0;
+        queueSize = par("queueSize");
+        WATCH(numRequestsToSend);
+        recordScalar("ums", (uint32) par("requestLength"));
+        timeMsg->setKind(MSGKIND_CONNECT);
+        scheduleAt((simtime_t)par("startTime"), timeMsg);
+        sendAllowed = true;
+        bufferSize = 0;
+
+        simtime_t stopTime = par("stopTime");
+        if (stopTime >= SIMTIME_ZERO)
+        {
+            stopTimer = new cMessage("StopTimer");
+            stopTimer->setKind(MSGKIND_STOP);
+            scheduleAt((simtime_t)par("stopTime"), stopTimer);
+            timer = true;
+        }
+        else
+        {
+            timer = false;
+            stopTimer = NULL;
+        }
+
+        simtime_t primaryTime = par("primaryTime");
+        if (primaryTime != SIMTIME_ZERO)
+        {
+            primaryChangeTimer = new cMessage("PrimaryTime");
+            primaryChangeTimer->setKind(MSGKIND_PRIMARY);
+            scheduleAt(primaryTime, primaryChangeTimer);
+        }
+        else
+        {
+            primaryChangeTimer = NULL;
+        }
     }
-    else
+    else if (stage == 1)
     {
-        timer = false;
-        stopTimer = NULL;
-    }
-
-    if ((simtime_t)par("primaryTime") != 0)
-    {
-        primaryChangeTimer = new cMessage("PrimaryTime");
-        primaryChangeTimer->setKind(MSGKIND_PRIMARY);
-        scheduleAt((simtime_t)par("primaryTime"), primaryChangeTimer);
-    }
-    else
-    {
-        primaryChangeTimer = NULL;
+        bool isOperational;
+        NodeStatus *nodeStatus = dynamic_cast<NodeStatus *>(findContainingNode(this)->getSubmodule("status"));
+        isOperational = (!nodeStatus) || nodeStatus->getState() == NodeStatus::UP;
+        if (!isOperational)
+            throw cRuntimeError("This module doesn't support starting in node DOWN state");
     }
 }
 
@@ -126,9 +141,9 @@ void SCTPClient::connect()
     outStreams = par("outboundStreams");
     socket.setInboundStreams(inStreams);
     socket.setOutboundStreams(outStreams);
-    ev << "issuing OPEN command\n";
+    EV << "issuing OPEN command\n";
     setStatusString("connecting");
-    ev << "connect to address " << connectAddress << "\n";
+    EV << "connect to address " << connectAddress << "\n";
 	bool streamReset = par("streamReset");
 	socket.connect(IPvXAddressResolver().resolve(connectAddress, 1), connectPort, streamReset, (int32)par("prMethod"), (uint32)par("numRequestsPerSession"));
 
@@ -179,7 +194,7 @@ void SCTPClient::setStatusString(const char *s)
 void SCTPClient::socketEstablished(int32, void *, uint64 buffer )
 {
     int32 count = 0;
-    ev << "SCTPClient: connected\n";
+    EV << "SCTPClient: connected\n";
     setStatusString("connected");
     bufferSize = buffer;
     // determine number of requests in this session
@@ -384,6 +399,7 @@ void SCTPClient::sendRequest(bool last)
         msg->setData(i, 'a');
 
     msg->setDataLen(sendBytes);
+    msg->setEncaps(false);
     msg->setByteLength(sendBytes);
     msg->setCreationTime(simulation.getSimTime());
     cmsg->encapsulate(msg);
@@ -406,7 +422,7 @@ void SCTPClient::handleTimer(cMessage *msg)
     switch (msg->getKind())
     {
         case MSGKIND_CONNECT:
-            ev << "starting session call connect\n";
+            EV << "starting session call connect\n";
             connect();
             break;
 
@@ -480,7 +496,7 @@ void SCTPClient::handleTimer(cMessage *msg)
             break;
 
         default:
-            ev << "MsgKind =" << msg->getKind() << " unknown\n";
+            EV << "MsgKind =" << msg->getKind() << " unknown\n";
             break;
     }
 }
@@ -517,7 +533,7 @@ void SCTPClient::socketPeerClosed(int32, void *)
     // close the connection (if not already closed)
     if (socket.getState() == SCTPSocket::PEER_CLOSED)
     {
-        ev << "remote SCTP closed, closing here as well\n";
+        EV << "remote SCTP closed, closing here as well\n";
         close();
     }
 }
@@ -525,7 +541,7 @@ void SCTPClient::socketPeerClosed(int32, void *)
 void SCTPClient::socketClosed(int32, void *)
 {
     // *redefine* to start another session etc.
-    ev << "connection closed\n";
+    EV << "connection closed\n";
     setStatusString("closed");
 
     if (primaryChangeTimer)
@@ -539,7 +555,7 @@ void SCTPClient::socketClosed(int32, void *)
 void SCTPClient::socketFailure(int32, void *, int32 code)
 {
     // subclasses may override this function, and add code try to reconnect after a delay.
-    ev << "connection broken\n";
+    EV << "connection broken\n";
     setStatusString("broken");
     numBroken++;
     // reconnect after a delay
@@ -681,9 +697,9 @@ void SCTPClient::finish()
         primaryChangeTimer = NULL;
     }
 
-    ev << getFullPath() << ": opened " << numSessions << " sessions\n";
-    ev << getFullPath() << ": sent " << bytesSent << " bytes in " << packetsSent << " packets\n";
-    ev << getFullPath() << ": received " << bytesRcvd << " bytes in " << packetsRcvd << " packets\n";
+    EV << getFullPath() << ": opened " << numSessions << " sessions\n";
+    EV << getFullPath() << ": sent " << bytesSent << " bytes in " << packetsSent << " packets\n";
+    EV << getFullPath() << ": received " << bytesRcvd << " bytes in " << packetsRcvd << " packets\n";
     sctpEV3 << "Client finished\n";
 }
 

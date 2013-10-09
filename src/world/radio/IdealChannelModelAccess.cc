@@ -23,7 +23,7 @@
 #include "IMobility.h"
 
 
-#define coreEV (ev.isDisabled()||!coreDebug) ? ev : ev << logName() << "::IdealChannelModelAccess: "
+#define coreEV (ev.isDisabled()||!coreDebug) ? EV : EV << logName() << "::IdealChannelModelAccess: "
 
 simsignal_t IdealChannelModelAccess::mobilityStateChangedSignal = SIMSIGNAL_NULL;
 
@@ -52,7 +52,7 @@ void IdealChannelModelAccess::initialize(int stage)
     {
         cc = dynamic_cast<IdealChannelModel *>(simulation.getModuleByPath("channelControl"));
         if (!cc)
-            throw cRuntimeError("Could not find ChannelControl module with name 'channelControl' in the toplevel network.");
+            throw cRuntimeError("Could not find IdealChannelModel module with name 'channelControl' in the toplevel network.");
 
         hostModule = findHost();
 

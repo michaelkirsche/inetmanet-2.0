@@ -11,14 +11,14 @@
 #ifndef __A_RSTP_H
 #define __A_RSTP_H
 
-#include "BPDU.h"
+#include "BPDU_m.h"
 #include "MACAddress.h"
 #include "Delivery_m.h"
 #include "Cache1Q.h"
 #include "PortFilt.h"
 
-#define UP 1
-#define DOWN 0
+#define PORTUP 1
+#define PORTDOWN 0
 
 
 enum PortStateT
