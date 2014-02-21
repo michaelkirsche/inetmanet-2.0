@@ -1,7 +1,7 @@
 # Adjust the following two paths to your actual configuration / installation
-CONTIKI_PATH = /home/user/git/contiki
+CONTIKI_PATH = $(HOME)/git/contiki
 
-# Adjust the name of the Contiki library that you compiled before using this INET module
+# Adjust the name of the Contiki library that you compiled before using this INET/INETMANET module
 CONTIKI_LIB = /examples/hello-world/contiki-omnetpp.a
 
 ### Use with Contiki version <= 2.6 or older
@@ -15,7 +15,7 @@ CONTIKI_LIB = /examples/hello-world/contiki-omnetpp.a
 ## therefore disable LIBS line above and enable the EXTRA_OBJS line below for a quick fix
 #####
 
-### Use with Contiki version > 2.6 or Github version
+### Use with Contiki version > 2.6 or the Github version
 EXTRA_OBJS = -Wl,-wrap,tcpip_input $(CONTIKI_PATH)$(CONTIKI_LIB) 
 
 INCLUDE_PATH += \
