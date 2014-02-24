@@ -90,13 +90,18 @@ void _6lowpan::initialize(int stage)
 				{
 				configuration[i] = new struct config();
 				cGate *toMac = gate("toMac", i);
+
+#if DEBUG
+				EV << "Node: " << this->getOwner()->getOwner()->getFullName() << " | Interface: " << toMac->getPathEndGate()->getOwner()->getOwner()->getFullName();
+#endif /* DEBUG */
+
 				// Check if we are connected to a 802.15.4 interface
 				if(isConnectedToLowpan(toMac))
 				{
-					InterfaceEntry* ie = ift->getInterfaceByNetworkLayerGateIndex(toMac->getIndex());
+				    InterfaceEntry* ie = ift->getInterfaceByNetworkLayerGateIndex(toMac->getIndex());
 					if(ie != null)
 					{
-						// save the necessary data
+					    // save the necessary data
 						configuration[i]->connectedToLowpan = true;
 						configuration[i]->contikiMemory = new contiki_config();
 						configuration[i]->interfaceId = ie->getInterfaceId();
@@ -126,7 +131,7 @@ bool _6lowpan::isConnectedToLowpan(cGate *toMac)
 						if(strcmp(mixnetBridgeLowerGateOut->getPathEndGate()->getOwnerModule()->getClassName(), "CSMA802154") == 0)
 						{
 #if DEBUG
-						    EV << "_6lowpan.cc:isConnectedToLowpan -> Connected to Mixnet \n";
+						    EV << " -> isConnectedToLowpan -> Connected to Mixnet \n";
 #endif /* DEBUG */
 						    return true;
 						}
@@ -147,7 +152,7 @@ bool _6lowpan::isConnectedToLowpan(cGate *toMac)
 							strcmp(queueOutputGate->getPathEndGate()->getOwnerModule()->getClassName(), "csma802154") == 0)
 						{
 #if DEBUG
-						    EV << "_6lowpan.cc:isConnectedToLowpan -> Connected to INETMANET \n";
+						    EV << " -> isConnectedToLowpan -> Connected to INETMANET \n";
 #endif /* DEBUG */
 						    return true;
 						}
@@ -157,7 +162,7 @@ bool _6lowpan::isConnectedToLowpan(cGate *toMac)
 		}
 	}
 #if DEBUG
-	EV << "_6lowpan.cc:isConnectedToLowpan -> isConnectedToLowpan = FALSE \n";
+	EV << " -> isConnectedToLowpan = FALSE \n";
 #endif /* DEBUG */
 	return false;
 }
